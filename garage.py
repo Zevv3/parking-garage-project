@@ -58,8 +58,7 @@ class Garage:
         # add to self.tickets list
         # ticket id is the index in self.tickets
 
-        if self.tickets_available > 0:
-            self.tickets_available -= 1
+        
 
         day_of_week = datetime.datetime.now().strftime("%a")
         hour_of_day = datetime.datetime.now().strftime("%H")       
@@ -84,11 +83,17 @@ class Garage:
         numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
         license_plate = choice(states) + ' ' + choice(letters).upper() + choice(letters).upper() + choice(letters).upper() + "-" + str(choice(numbers)) + str(choice(numbers)) + str(choice(numbers))
+        if self.tickets_available > 0:
+            if self.current_ticket == {}:
+                self.tickets_available -= 1
+                self.parking_spaces_available -= 1
+                self.current_ticket = ticket.Ticket(self.tickets[-1]['ticket_id']+1, ticket_cost, datetime.datetime.now().strftime("%H"), license_plate)
+                self.current_ticket = self.current_ticket.make_dict()
+                self.tickets.append(self.current_ticket)
+                self.current_ticket = {}
 
-        if self.current_ticket == {}:
-            self.current_ticket = ticket.Ticket(self.tickets[-1]['ticket_id']+1, ticket_cost, datetime.datetime.now(), license_plate)
-            self.current_ticket = self.current_ticket.make_dict()
-            self.tickets.append(self.current_ticket)
+            # print(f"after taking ticket: {self.tickets}")
+
         else:
             print("\nYou already have a ticket!  Please choose another option.")
 
@@ -98,53 +103,85 @@ class Garage:
         else:
             return False
 
-    def park_in_available_space(self):
-        if self.check_ticket():
-            if self.parking_spaces_available > 0:
-                self.parking_spaces_available -= 1
-        else:
-            print("You can only choose this option after taking a ticket!")
-        self.current_ticket = {}
-                    
-        
+    # def park_in_available_space(self):
+    #     if self.check_ticket():
+    #         if self.parking_spaces_available > 0:
+    #             self.parking_spaces_available -= 1
+    #             self.current_ticket = {}
+    #     else:
+    #         print("\nYou can only choose this option after taking a ticket!")
 
-    def exit_parking_space(self):
-        # leave parking space and proceed to leave garage
-        # increment parking_spaces_available
-        if self.check_ticket():
-            pass
-        else:
-            print("You can only choose this option after taking a ticket!")
-    
     def pay_for_parking(self):
         # returns True/False
         id = ""
-        while not isinstance(id, int):
-            try:
-                id = int(input("What is your ticket id? "))
-            except:
-                id = int(input("Please input a numeric entry. "))
-            finally:
-                continue
-        for ticket in self.tickets:
-            if id == ticket['ticket_id']:
-                self.current_ticket = ticket
+        # Active = True
+        while True:
+            while not isinstance(id, int):
+                try:
+                    id = int(input("\nWhat is your ticket id? Or enter 0 to quit pay. "))
+                except:
+                    id = int(input("\nPlease input a numeric entry. Or enter 0 to quit pay. "))
+                finally:
+                    continue
+            if id == 0:
+                break
+            elif id < 0:
+                print("\nPlease enter a valid ticket id. Or enter 0 to quit pay. ")
+                while id < 0:
+                    try:
+                        id = int(input("\nWhat is your ticket id? Or enter 0 to quit pay. "))
+                    except:
+                        id = int(input("\nPlease input a numeric entry. Or enter 0 to quit pay. "))
+                    finally:
+                        continue                
+            elif id >= 1:
+                ticket_id_exists = False
+                while not ticket_id_exists:
+                    for ticket in self.tickets:
+                        if id == ticket['ticket_id']:
+                            ticket_id_exists = True
+                            break
+                        else:                     
+                            ticket_id_exists = False
+                    if not ticket_id_exists:
+                        print("\nPlease enter a valid ticket id. ")
+                        id = ''
+                        break
+                while ticket_id_exists:
+                    for ticket in self.tickets:
+                        if id == "":
+                            break
+                        elif id == ticket['ticket_id']:
+                            self.current_ticket = ticket
+                            hour_of_day = datetime.datetime.now().strftime("%H")
+                            # We added an hour to the exit timestamp to avoid $0 ticket cost when testing this app
+                            self.current_ticket['ticket_exit_timestamp'] = int(hour_of_day) + 1
+                            hours_parked = int(self.current_ticket['ticket_exit_timestamp']) - int(self.current_ticket['ticket_entry_timestamp'])              
+                            print(f"\nYou were parked for {hours_parked} hour(s).")
+                            balance = hours_parked * int(self.current_ticket['ticket_cost'])
+                            pay = input(f"Please confirm your payment of ${balance}). (yes/no) ")
+                            if pay in ('yes','y'):
+                                self.current_ticket['ticket_paid_status'] = True
+                                print("\nThank you for your payment!")
+                                print(f"\nThank you for parking in {self.garage_name}! Please visit us again!")
+                                # print(f"before payment: {self.tickets}")
+                                self.tickets.remove(self.current_ticket)
+                                # print(f"after payment: {self.tickets}")
+                                
+                                self.parking_spaces_available += 1
+                                self.tickets_available += 1
+                                self.current_ticket = {}
+                                return
+                            elif pay in ('no','n'):
+                                print('\nSecurity is on its way.')
+                                break
+                            else:
+                                print("Please enter a valid response")
+                    ticket_id_exists = False
+
         if self.current_ticket == {}:
-            print("Invalid ticket id. Please try again.")
-            return
+            print("\nInvalid ticket id. Please try again.")
         if self.check_ticket():
             pass
         else:
-            print("You can only choose this option after taking a ticket!")
-
-    def leave_garage(self):
-        # check for paid ticket status = true
-        # opening gate...
-        # print thank you message
-
-        if self.check_ticket():
-            print(f"Thank you for parking in {self.garage_name}! Please visit us again!")
-        else:
-            print("You can only choose this option after taking a ticket!")
-
-
+            print("\nYou can only choose this option after taking a ticket!")

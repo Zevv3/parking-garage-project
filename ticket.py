@@ -26,6 +26,6 @@ class Ticket:
             "ticket_entry_timestamp": self.ticket_entry_timestamp,
             "ticket_vehicle_license_plate": self.ticket_vehicle_license_plate,
             "ticket_exit_timestamp": None,
-            "ticket_paid_status": None        
+            "ticket_paid_status": False        
     }
         return current_ticket_dict
